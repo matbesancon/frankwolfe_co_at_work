@@ -9,6 +9,7 @@ begin
 	using FrankWolfe
 	using Plots
 	using LinearAlgebra, Random
+	Random.seed!(42)
 end
 
 # ╔═╡ f9ecc6c9-4ce5-434d-8486-a3a79219f2b2
@@ -126,6 +127,9 @@ end
 
 # ╔═╡ 182d27d0-d54f-4756-b10f-199486a75387
 plot_trajectories([result.traj_data], ["FW"])
+
+# ╔═╡ 745dcc12-2494-41ce-b208-653f9da284e5
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1436,5 +1440,6 @@ version = "1.4.1+1"
 # ╠═27fb0ac1-1d0b-4d62-bc64-eba297dec2df
 # ╠═36937e26-9d0a-407b-95d2-b34e2c679e11
 # ╠═182d27d0-d54f-4756-b10f-199486a75387
+# ╠═745dcc12-2494-41ce-b208-653f9da284e5
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
