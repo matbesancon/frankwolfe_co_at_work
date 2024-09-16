@@ -35,6 +35,32 @@ all_vertices = [
 	[0.5, -1.75],
 ]
 
+# ╔═╡ acb355bc-69a7-406e-82ff-7fda43a5ce5f
+md"""# Visualizing Standard Frank-Wolfe and active-set algorithms iterations"""
+
+
+# ╔═╡ 8a7e23f0-60e4-4f8d-9119-b05e22dd7c0d
+begin
+	all_box_vertices = [
+		[-1.0, -1],
+		[1, -1],
+		[-1, 1],
+		[1, 1],
+	]
+	lmo = FrankWolfe.ConvexHullOracle(all_box_vertices)
+end
+
+# ╔═╡ 224a782e-901a-4510-bbed-a34f4b8bfa23
+begin
+	f(x) = 0.5 * norm(x - [0.0, 1.0])^2
+	function grad!(storage, x)
+		storage .= x - [0.0, 1.0]
+	end
+end
+
+# ╔═╡ 96f8377c-5113-479c-8a91-d5c357ea9145
+v0 = all_box_vertices[1]
+
 # ╔═╡ 4d2d2a37-3480-43d7-9db2-007744801cad
 function get_angle(v)
 	@assert !(norm(v) ≈ 0)
@@ -129,6 +155,54 @@ begin
 	pl = plot()
 	plot_polytope!(pl, all_vertices)
 	plot_distribution!(pl, active_set)
+end
+
+# ╔═╡ aa444de8-01c2-4007-850d-7cb10ee43978
+function make_iterate_callback(array)
+	function record_iterate_callback(state, args...)
+		push!(array, copy(state.x))
+	end
+end
+
+# ╔═╡ e4844971-ef73-4dbb-92f4-47b7a6cb9f5d
+begin
+	frank_wolfe_iterates = []
+	fw_callback = make_iterate_callback(frank_wolfe_iterates)
+	FrankWolfe.frank_wolfe(f, grad!, lmo, copy(v0), callback=fw_callback, verbose=true, max_iteration=10)
+	frank_wolfe_iterates_x = getindex.(frank_wolfe_iterates, 1)
+	frank_wolfe_iterates_y = getindex.(frank_wolfe_iterates, 2)
+end
+
+# ╔═╡ 69d7f92d-030e-4c05-b16b-88c8cc10de17
+begin
+	away_iterates = [copy(v0)]
+	afw_callback = make_iterate_callback(away_iterates)
+	away_result = FrankWolfe.away_frank_wolfe(f, grad!, lmo, copy(v0), callback=afw_callback, verbose=true, max_iteration=10)
+	afw_iterates_x = getindex.(away_iterates, 1)
+	afw_iterates_y = getindex.(away_iterates, 2)
+end
+
+# ╔═╡ 78a97103-3935-4047-8e41-66a389dcd477
+# Exercise, add blended_pairwise_conditional_gradient to the plot
+begin
+	bpcg_iterates = [copy(v0)]
+	bpcg_callback = make_iterate_callback(bpcg_iterates)
+	# TODO call BPCG here
+	bpcg_iterates_x = getindex.(bpcg_iterates, 1)
+	bpcg_iterates_y = getindex.(bpcg_iterates, 2)
+end
+
+# ╔═╡ 99edd071-6e0b-4221-aa50-a5740aeb5005
+begin
+	pl_iterates = plot()
+	plot_polytope!(pl_iterates, sort!(all_box_vertices, by=get_angle))
+	plot!(pl_iterates, frank_wolfe_iterates_x, frank_wolfe_iterates_y, label="FW", width=2, linestyle=:dash)
+	plot!(pl_iterates, afw_iterates_x, afw_iterates_y, label="AFW")
+	if length(bpcg_iterates) > 1
+		plot!(pl_iterates, bpcg_iterates_x, bpcg_iterates_y, label="AFW")
+	end
+	# uncomment to show the final active set
+	# plot_distribution!(pl_iterates, away_result.active_set)
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1387,14 +1461,23 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═38ba1dbc-711c-11ef-27c2-67e63b700b43
+# ╟─38ba1dbc-711c-11ef-27c2-67e63b700b43
 # ╠═66b6aa2b-6c01-439e-bfb4-993142f65cb7
 # ╠═9c2ab032-b23d-4f45-9549-b0c3c5664b36
 # ╠═0cadc6b9-3275-40fa-8d08-04320ea265ee
 # ╠═8d454e41-2668-4250-9ba4-e909eb9cfd47
 # ╠═54b330e7-5933-4c55-940f-284e57c8340c
+# ╟─acb355bc-69a7-406e-82ff-7fda43a5ce5f
+# ╠═8a7e23f0-60e4-4f8d-9119-b05e22dd7c0d
+# ╠═224a782e-901a-4510-bbed-a34f4b8bfa23
+# ╠═96f8377c-5113-479c-8a91-d5c357ea9145
+# ╠═e4844971-ef73-4dbb-92f4-47b7a6cb9f5d
+# ╠═69d7f92d-030e-4c05-b16b-88c8cc10de17
+# ╠═78a97103-3935-4047-8e41-66a389dcd477
+# ╠═99edd071-6e0b-4221-aa50-a5740aeb5005
 # ╠═2ff24416-6a3f-4894-9907-d5ccca4c37d8
 # ╠═4d2d2a37-3480-43d7-9db2-007744801cad
 # ╠═cd6d18d8-9da4-42ca-829e-66fb494c282a
+# ╠═aa444de8-01c2-4007-850d-7cb10ee43978
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
