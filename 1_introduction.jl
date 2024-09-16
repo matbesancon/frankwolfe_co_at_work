@@ -35,9 +35,6 @@ begin
 	plot!([exp(-1), exp(-1)], [-0.1, -0.4], linestyle=:dash, label="optimum")
 end
 
-# ╔═╡ f34e52f1-6858-4a28-b148-bd97d8350709
-
-
 # ╔═╡ 7891618d-16db-459f-958b-f6fd691f8dfb
 # Gradient
 # FrankWolfe.jl defines gradients as in-place functions
@@ -1422,7 +1419,6 @@ version = "1.4.1+1"
 # ╠═73dba3f9-26e6-4eac-88a4-1e8325ae73e6
 # ╠═e064b147-332a-465e-af46-c09e12c63fec
 # ╠═d9d0ab0d-0550-4aa8-85e5-37ceb6df365c
-# ╠═f34e52f1-6858-4a28-b148-bd97d8350709
 # ╠═7891618d-16db-459f-958b-f6fd691f8dfb
 # ╠═a5295d20-d359-429a-ae3e-2bd08ad330c1
 # ╠═f9ecc6c9-4ce5-434d-8486-a3a79219f2b2
