@@ -64,7 +64,7 @@ end
 
 # ╔═╡ 33ef8bf6-335c-45d6-8f5f-98219fefcead
 # OK the gradient is good
-# let's plot the function in 2D on the 3-D simplex
+# Let's plot the function in 2D on the 3D simplex
 begin
 	contour_func(x, y) = neg_entropy([x, y, 1 - x - y])
 	contour_func_indicator(x, y) = x + y > 1 ? 0 : contour_func(x,y) 

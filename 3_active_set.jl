@@ -62,6 +62,7 @@ end
 v0 = all_box_vertices[1]
 
 # ╔═╡ 4d2d2a37-3480-43d7-9db2-007744801cad
+# Below are useful functions already defined for convenience
 function get_angle(v)
 	@assert !(norm(v) ≈ 0)
 	v = v ./ norm(v)
@@ -187,7 +188,7 @@ end
 begin
 	bpcg_iterates = [copy(v0)]
 	bpcg_callback = make_iterate_callback(bpcg_iterates)
-	# TODO call BPCG here
+	# TODO call BPCG here to get bpcg_result
 	bpcg_iterates_x = getindex.(bpcg_iterates, 1)
 	bpcg_iterates_y = getindex.(bpcg_iterates, 2)
 end
@@ -196,13 +197,13 @@ end
 begin
 	pl_iterates = plot()
 	plot_polytope!(pl_iterates, sort!(all_box_vertices, by=get_angle))
-	plot!(pl_iterates, frank_wolfe_iterates_x, frank_wolfe_iterates_y, label="FW", width=2, linestyle=:dash)
+	plot!(pl_iterates, frank_wolfe_iterates_x, frank_wolfe_iterates_y, label="FW", width=2)
 	plot!(pl_iterates, afw_iterates_x, afw_iterates_y, label="AFW")
 	if length(bpcg_iterates) > 1
-		plot!(pl_iterates, bpcg_iterates_x, bpcg_iterates_y, label="AFW")
+		plot!(pl_iterates, bpcg_iterates_x, bpcg_iterates_y, label="BPCG")
 	end
 	# uncomment to show the final active set
-	# plot_distribution!(pl_iterates, away_result.active_set)
+	# plot_distribution!(pl_iterates, bpcg_result.active_set)
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
