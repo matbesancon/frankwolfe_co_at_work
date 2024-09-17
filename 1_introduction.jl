@@ -126,7 +126,34 @@ end
 plot_trajectories([result.traj_data], ["FW"])
 
 # ╔═╡ 745dcc12-2494-41ce-b208-653f9da284e5
+md"""# Frank-Wolfe for nonlinear convex sets"""
 
+# ╔═╡ 0de475ca-6ce9-4e89-a15c-1553c034da29
+ball_lmo = FrankWolfe.LpNormLMO{2}(1.0)
+
+# ╔═╡ a14a2049-af90-4a63-b93f-915c368c0149
+begin
+	shifted_quadratic(x) = (2(x[1] - 1)^2 + (x[2] - 1)^2)
+	function grad_quadratic!(storage, x)
+		storage[1] = 4(x[1] - 1)
+		storage[2] = 2(x[2] - 1)
+	end
+	x0_ball = FrankWolfe.compute_extreme_point(ball_lmo, ones(2))
+end
+
+# ╔═╡ 1c760d7f-f992-453f-8397-4c1426fc5d37
+x_result_ball, _ = FrankWolfe.frank_wolfe(shifted_quadratic, grad_quadratic!, ball_lmo, x0_ball, verbose=true)
+
+# ╔═╡ e874091f-0f3d-4fd5-90ef-da218ee1c6ca
+begin
+	contour_func_quad(x, y) = shifted_quadratic([x, y])
+	contour_func_quad_indicator(x, y) = x^2 + y^2 > 1 ? 11.0 : contour_func_quad(x,y) 
+	x_ball = -1:0.001:1
+	y_ball = -1:0.001:1
+	z_ball = @. contour_func_quad_indicator(x_ball', y_ball)
+	contour(x_ball, y_ball, z_ball, levels=10, fill=true)
+	scatter!([x_result_ball[1]], [x_result_ball[2]], label="x_FW")
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1436,6 +1463,10 @@ version = "1.4.1+1"
 # ╠═27fb0ac1-1d0b-4d62-bc64-eba297dec2df
 # ╠═36937e26-9d0a-407b-95d2-b34e2c679e11
 # ╠═182d27d0-d54f-4756-b10f-199486a75387
-# ╠═745dcc12-2494-41ce-b208-653f9da284e5
+# ╟─745dcc12-2494-41ce-b208-653f9da284e5
+# ╠═0de475ca-6ce9-4e89-a15c-1553c034da29
+# ╠═a14a2049-af90-4a63-b93f-915c368c0149
+# ╠═1c760d7f-f992-453f-8397-4c1426fc5d37
+# ╠═e874091f-0f3d-4fd5-90ef-da218ee1c6ca
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
