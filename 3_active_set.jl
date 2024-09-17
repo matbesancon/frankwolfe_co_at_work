@@ -75,8 +75,8 @@ end
 
 # ╔═╡ 0cadc6b9-3275-40fa-8d08-04320ea265ee
 begin
-	vertices = all_vertices[1:4]
-	weights = [0.5, 0.1, 0.2, 0.2]
+	vertices = all_vertices[[1, 3, 4, 9]]
+	weights = [0.4, 0.2, 0.1, 0.6]
 	
 	# normalization
 	weights /= sum(weights)
@@ -111,7 +111,7 @@ function plot_distribution!(
 			fillalpha=0.1,
 			linestyle=:dash,
 			linecolor=:black,
-			label=nothing,
+			label="conv(S)",
 		)
 		scatter!(
 			pl,
