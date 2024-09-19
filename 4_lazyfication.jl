@@ -4,223 +4,100 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 0aa49582-70dc-11ef-342d-7378aca43803
+# ╔═╡ 6e523f10-765b-11ef-319c-8fedf594e39c
 begin
 	using FrankWolfe
 	using Plots
-	using LinearAlgebra
-	using Random
-	using SparseArrays
-	Random.seed!(42)
+	using LinearAlgebra, Random
 end
 
-# ╔═╡ e1af34e7-141b-42bc-b9cd-f1be4876bd87
-md"""# Callbacks for information collection
-
-In the first part, we will see how to compute extra information along the run in the callback.
-
-We will try to solve a sparse regression problem over the L1 ball.
-"""
-
-# ╔═╡ 5fb30cbf-2c5f-400a-87cd-2ac4a730b933
-begin
-	# problem size
-	n, p = 200, 200
-	A_base = randn(n, p)
-	A_noise = A_base .+ 0.1 * randn(n, p)
-	A = [A_noise A_base]
-
-	A_test = A[1:100, :]
-	A_train = A[101:end, :]
-end
-
-# ╔═╡ 5e916a7d-3603-4d28-a981-b355e7fbb2c9
-# generate outcome from sparse model
-begin
-	true_indices = unique([rand(1:p) for _ in 1:30])
-	k_true = length(true_indices)
-	x_true = [rand(-20:20) for _ in eachindex(true_indices)]
-	y_train = A_train[:, true_indices] * x_true + randn(n÷ 2)
-	y_test = A_test[:, true_indices] * x_true + randn(n÷ 2)
-end
-
-# ╔═╡ 60a04b23-64c7-42da-90c7-cfd7203cd895
-# build the sparse true vector
-begin
-	x_true_vector = spzeros(2p)
-	for idx in eachindex(x_true)
-		x_true_vector[true_indices[idx]] = x_true[idx]
-	end
-end
-
-# ╔═╡ 40167aeb-b4d6-4a94-9097-1e540b3b79d4
-function f_train(x)
-	res = (A_train * x - y_train)
-	return 0.5 * norm(res)^2
-end
-
-# ╔═╡ 1ad47d41-3edf-45c4-b56a-08611ba570b9
-begin
-	const A_tA_train = A_train' * A_train
-	const A_tA_test = A_test' * A_test
-end
-
-# ╔═╡ 51c44ac7-6c68-41b7-8ca4-e42e57419178
-function grad_train!(storage, x)
-	storage .= A_tA_train * x - A_train' * y_train
-end
-
-# ╔═╡ 4127d89d-57b9-404d-9008-cb426844842d
-function f_test(x)
-	res = (A_test * x - y_test)
-	return 0.5 * norm(res)^2
-end
-
-# ╔═╡ c7565981-c1fc-4d60-b954-7b49a9480563
-function grad_test!(storage, x)
-	storage .= A_tA_test * x - A_test' * y_test
-end
-
-# ╔═╡ c838dad0-6264-4e2f-8b3e-ccb51dcc490b
+# ╔═╡ ad484695-14aa-4898-9893-9c1d7a5772a9
 md"""
-We can compute the exact least square solution with the pseudo-inverse.
+# Frank-Wolfe Lazification
+
+The essential cost of a FW iteration is often in the linear minimization oracle.
+
+One essential observation is that any direction that provides sufficient progress can be used, for instance with a vertex readily available.
 """
 
-# ╔═╡ 6d353343-ca7b-4199-a5bb-95e83c4c3a0b
-xhat_train = A_tA_train \ (A_train' * y_train)
+# ╔═╡ c1882e31-f2ee-4deb-a24e-b8cd6354d077
+lmo = FrankWolfe.LpNormLMO{Inf}(1)
 
-# ╔═╡ 1e1ad824-cedf-4d6e-9cd0-6352ef572601
-norm(xhat_train - x_true_vector)
+# ╔═╡ a00919ea-3b8c-4897-903f-d081a87ee2b0
+v0 = FrankWolfe.compute_extreme_point(lmo, ones(1000))
 
-# ╔═╡ bd24f07a-6c68-45e6-bbdf-809f735c8e04
-norm(x_true_vector, 1), length(x_true) * 20 / 2
+# ╔═╡ 1dd76159-6452-494c-9a0a-c20e7f14c355
+lmo_tracking = FrankWolfe.TrackingLMO(lmo)
 
-# ╔═╡ 2fca3389-f0b9-43e9-977f-5911d21584bc
-norm(xhat_train, 1)
+# ╔═╡ 15f9ee47-f8a6-4656-817b-59f83f932961
+lmo_tracking.counter
 
-# ╔═╡ 8efc31a6-d4c3-4336-b613-740f5c7e9550
-md"""A callback is a function called by FrankWolfe.jl algorithms at each iteration of the solving process. We can use it to record the test error of the current iterate.
+# ╔═╡ 6d330b67-1b1d-4cf7-8fd2-ccee06ec17b6
+FrankWolfe.compute_extreme_point(lmo_tracking, ones(1000))
 
-The way we will build ours:
-1. Define an external array, initially empty
-2. When the callback is called, it will compute the test error and append the value to the array
-3. We pass the callback to FrankWolfe, which calls it at every iteration
-4. After the run, we can analyze the information we collected.
-"""
+# ╔═╡ 2d3cb0ea-bfa7-45cc-9bcc-488787d79c7f
+lmo_tracking.counter
 
-# ╔═╡ 7fc38cad-0388-401b-b703-424bcdc507cf
-begin
-	test_error = []
-	function callback_test_error(state, args...)
-		x_t = state.x
-		push!(test_error, f_test(x_t))
-		return true
+# ╔═╡ 0458a540-a102-4b0e-a0bc-8de027f31130
+lmo_tracking.counter = 0
+
+# ╔═╡ c32a0385-f8f4-403b-909e-824380acc0c1
+f(x) = 0.5 * (sum(x[i]^2 for i in 1:(length(x) - 1)) + (x[end] - 1)^2)
+
+# ╔═╡ 069df4f9-0d9d-443c-9c24-62153bfcafd6
+function grad!(storage, x)
+	for i in 1:(length(x)-1)
+		storage[i] = x[i]
 	end
+	storage[end] = x[end] - 1
 end
 
-# ╔═╡ b4dd4a2f-ef82-4947-803f-9a3101b5b709
-lmo = FrankWolfe.LpNormLMO{1}(length(x_true) * 20 / 2)
+# ╔═╡ 7b17fc0e-e0ca-4517-a897-27c8dadadb19
+# ╠═╡ disabled = true
+#=╠═╡
+result_fw = FrankWolfe.frank_wolfe(f, grad!, lmo_tracking, copy(v0), verbose=true)
+  ╠═╡ =#
 
-# ╔═╡ 79172f8b-44da-4b5c-8fd5-3d780646ceff
-result = FrankWolfe.frank_wolfe(f_train, grad_train!, lmo, zeros(2p), verbose=true, callback=callback_test_error, trajectory=true)
+# ╔═╡ d84cb0f9-6a23-4dae-b3dd-10ffa48c6753
+lmo_tracking.counter
 
-# ╔═╡ 82f112fe-d2b1-4105-b055-d7b4d28f0f04
-train_error = getindex.(result.traj_data, 2)
+# ╔═╡ 8b73f71a-687d-4069-a79b-7834ea6696cf
+lmo_tracking.counter = 0
 
-# ╔═╡ afe1ec00-01a1-449e-ad6e-7df3a717e95b
-begin
-	plot(train_error, label="train", yaxis=:log)
-	plot!(test_error, label="test")
-end
+# ╔═╡ 9f26ef7f-47d9-4d21-aaef-18397cf6b764
+result_lfw = FrankWolfe.lazified_conditional_gradient(f, grad!, lmo_tracking, copy(v0), verbose=true)
 
-# ╔═╡ 667de8a1-15f2-4cfc-a242-30cefc08ac25
-length(train_error), length(test_error)
+# ╔═╡ 4e236093-f896-43b6-b91a-bbd36c8007ea
+lmo_tracking.counter
 
-# ╔═╡ f5eaf758-5784-4f25-a7ec-22ecff130505
-begin
-	test_error_bpcg = []
-	function callback_test_error_bpcg(state, args...)
-		x_t = state.x
-		push!(test_error_bpcg, f_test(x_t))
-		return true
-	end
-end
-
-# ╔═╡ b5916652-826a-413d-8467-dadc3135a105
-result_bpcg = FrankWolfe.blended_pairwise_conditional_gradient(f_train, grad_train!, lmo, zeros(2p), verbose=true, callback=callback_test_error_bpcg, trajectory=true)
-
-# ╔═╡ a749da2c-3f33-4177-9d83-4783ed04c273
-begin
-	plot(train_error, label="train-fw", yaxis=:log)
-	plot!(test_error, label="test-fw")
-	plot!(getindex.(result_bpcg.traj_data, 2), label="train-bp")
-	plot!(test_error_bpcg, label="test-bp")
-end
-
-# ╔═╡ 9ac10dec-c7a6-4e5f-9305-9a97f48bb5f7
+# ╔═╡ 6c6bc2bf-6469-4e09-b697-ed99c0396f2a
 md"""
-## Exercises:
-
-Iterates produced by Frank-Wolfe algorithms are typically sparse, constructed from a convex combination of a small number of vertices.
-
-- Can you use a callback to collect the number of nonzeros in the iterate?
+# Exercise: compare lazy Away Frank-Wolfe with the standard version.
+Use the keyword lazy=true to make the algorithm lazy. Don't forget to reset the LMO counter after you use an algorithm!
 """
 
-# ╔═╡ 7dad9593-d8c8-49f8-8fd3-77dd2156ae1f
-begin
-	nonzeros_of_iterate_fw = []
-	function callback_nonzeros_of_iterate_fw(state, args...)
-		x_t = state.x
-		# TODO
-		
-	end
-	nonzeros_of_iterate_bp = []
-	function callback_nonzeros_of_iterate_bp(state, args...)
-		x_t = state.x
-		# TODO
-		
-	end
-end
+# ╔═╡ b243e1be-8974-4c5b-bc5f-6779a08410eb
 
-# ╔═╡ b15f5f44-e231-4e2a-924e-dab6b649cc30
-# run this cell after
-if !isempty(nonzeros_of_iterate_fw) && !isempty(nonzeros_of_iterate_bp)
-	plot(nonzeros_of_iterate_fw, label="FW")
-	plot!(nonzeros_of_iterate_bp, label="BP")
-end
 
-# ╔═╡ cdf318fc-cc85-4dbf-a14d-e6a051d2cb2b
-md"""# Callback for early termination
+# ╔═╡ beaf283b-6610-47de-83d3-d4fc95ff4710
 
-Did you notice the `return true` at the end of the callback?
 
-It corresponds to another feature: being able to dynamically interrupt the solving process. If the callback returns false, the algorithm computes the results and returns, even if the other stopping criteria are not met.
-"""
-
-# ╔═╡ 054c774b-d5c8-470e-a808-150da64e3a40
+# ╔═╡ c8556c36-86b5-4ce3-936d-a7600410c5ad
 md"""
-## Exercise:
-
-Modify the callback above to interrupt the solution process if the test error is less than 6000.
+# Exercise: do the same with the Blended Pairwise Conditional Gradient Algorithm.
 """
 
-# ╔═╡ d74f588e-2379-4550-86a3-06b0c98db0fd
-function callback_interrupt_on_test(state, args...)
-	# TODO: replace my_condition
-	my_condition = true
-	if my_condition
-		return false
-	end
-	# otherwise, the algorithm can continue
-	return true
-end
+# ╔═╡ c0b0b43f-7bc3-4036-83ac-1b87de7f4bef
 
-# ╔═╡ 61b9fb16-5be8-410e-b713-9767a7c42cac
-begin
-	result_bpcg_interrupted = FrankWolfe.blended_pairwise_conditional_gradient(f_train, grad_train!, lmo, zeros(2p), verbose=true, callback=callback_interrupt_on_test, max_iteration=20000)
-	result_fw_interrupted = FrankWolfe.frank_wolfe(f_train, grad_train!, lmo, zeros(2p), verbose=true, callback=callback_interrupt_on_test, max_iteration=20000)
-	@show f_test(result_bpcg_interrupted.x), f_test(result_fw_interrupted.x)
-end
+
+# ╔═╡ 97affdb7-2de0-418d-b022-f095901e7acb
+
+
+# ╔═╡ 712076b4-6431-4e0a-9c4d-73162e09a003
+
+
+# ╔═╡ ab63bf5d-0004-4b69-8425-158caa866b0d
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -229,7 +106,6 @@ FrankWolfe = "f55ce6ea-fdc5-4628-88c5-0087fe54bd30"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [compat]
 FrankWolfe = "~0.4.0"
@@ -242,7 +118,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.4"
 manifest_format = "2.0"
-project_hash = "02d434f2a1e3ae8e10401e99c06a474a28e03536"
+project_hash = "857652f33dc8fe4e525de16a4e49e32f28137599"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -1479,37 +1355,29 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═0aa49582-70dc-11ef-342d-7378aca43803
-# ╟─e1af34e7-141b-42bc-b9cd-f1be4876bd87
-# ╠═5fb30cbf-2c5f-400a-87cd-2ac4a730b933
-# ╠═5e916a7d-3603-4d28-a981-b355e7fbb2c9
-# ╠═60a04b23-64c7-42da-90c7-cfd7203cd895
-# ╠═40167aeb-b4d6-4a94-9097-1e540b3b79d4
-# ╠═1ad47d41-3edf-45c4-b56a-08611ba570b9
-# ╠═51c44ac7-6c68-41b7-8ca4-e42e57419178
-# ╠═4127d89d-57b9-404d-9008-cb426844842d
-# ╠═c7565981-c1fc-4d60-b954-7b49a9480563
-# ╠═c838dad0-6264-4e2f-8b3e-ccb51dcc490b
-# ╠═6d353343-ca7b-4199-a5bb-95e83c4c3a0b
-# ╠═1e1ad824-cedf-4d6e-9cd0-6352ef572601
-# ╠═bd24f07a-6c68-45e6-bbdf-809f735c8e04
-# ╠═2fca3389-f0b9-43e9-977f-5911d21584bc
-# ╟─8efc31a6-d4c3-4336-b613-740f5c7e9550
-# ╠═7fc38cad-0388-401b-b703-424bcdc507cf
-# ╠═b4dd4a2f-ef82-4947-803f-9a3101b5b709
-# ╠═79172f8b-44da-4b5c-8fd5-3d780646ceff
-# ╠═82f112fe-d2b1-4105-b055-d7b4d28f0f04
-# ╠═afe1ec00-01a1-449e-ad6e-7df3a717e95b
-# ╠═667de8a1-15f2-4cfc-a242-30cefc08ac25
-# ╠═f5eaf758-5784-4f25-a7ec-22ecff130505
-# ╠═b5916652-826a-413d-8467-dadc3135a105
-# ╠═a749da2c-3f33-4177-9d83-4783ed04c273
-# ╟─9ac10dec-c7a6-4e5f-9305-9a97f48bb5f7
-# ╠═7dad9593-d8c8-49f8-8fd3-77dd2156ae1f
-# ╠═b15f5f44-e231-4e2a-924e-dab6b649cc30
-# ╟─cdf318fc-cc85-4dbf-a14d-e6a051d2cb2b
-# ╟─054c774b-d5c8-470e-a808-150da64e3a40
-# ╠═d74f588e-2379-4550-86a3-06b0c98db0fd
-# ╠═61b9fb16-5be8-410e-b713-9767a7c42cac
+# ╠═6e523f10-765b-11ef-319c-8fedf594e39c
+# ╟─ad484695-14aa-4898-9893-9c1d7a5772a9
+# ╠═c1882e31-f2ee-4deb-a24e-b8cd6354d077
+# ╠═a00919ea-3b8c-4897-903f-d081a87ee2b0
+# ╠═1dd76159-6452-494c-9a0a-c20e7f14c355
+# ╠═15f9ee47-f8a6-4656-817b-59f83f932961
+# ╠═6d330b67-1b1d-4cf7-8fd2-ccee06ec17b6
+# ╠═2d3cb0ea-bfa7-45cc-9bcc-488787d79c7f
+# ╠═0458a540-a102-4b0e-a0bc-8de027f31130
+# ╠═c32a0385-f8f4-403b-909e-824380acc0c1
+# ╠═069df4f9-0d9d-443c-9c24-62153bfcafd6
+# ╠═7b17fc0e-e0ca-4517-a897-27c8dadadb19
+# ╠═d84cb0f9-6a23-4dae-b3dd-10ffa48c6753
+# ╠═8b73f71a-687d-4069-a79b-7834ea6696cf
+# ╠═9f26ef7f-47d9-4d21-aaef-18397cf6b764
+# ╠═4e236093-f896-43b6-b91a-bbd36c8007ea
+# ╟─6c6bc2bf-6469-4e09-b697-ed99c0396f2a
+# ╠═b243e1be-8974-4c5b-bc5f-6779a08410eb
+# ╠═beaf283b-6610-47de-83d3-d4fc95ff4710
+# ╟─c8556c36-86b5-4ce3-936d-a7600410c5ad
+# ╠═c0b0b43f-7bc3-4036-83ac-1b87de7f4bef
+# ╠═97affdb7-2de0-418d-b022-f095901e7acb
+# ╠═712076b4-6431-4e0a-9c4d-73162e09a003
+# ╠═ab63bf5d-0004-4b69-8425-158caa866b0d
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
