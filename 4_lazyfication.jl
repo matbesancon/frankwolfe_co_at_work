@@ -53,10 +53,7 @@ function grad!(storage, x)
 end
 
 # ╔═╡ 7b17fc0e-e0ca-4517-a897-27c8dadadb19
-# ╠═╡ disabled = true
-#=╠═╡
 result_fw = FrankWolfe.frank_wolfe(f, grad!, lmo_tracking, copy(v0), verbose=true)
-  ╠═╡ =#
 
 # ╔═╡ d84cb0f9-6a23-4dae-b3dd-10ffa48c6753
 lmo_tracking.counter

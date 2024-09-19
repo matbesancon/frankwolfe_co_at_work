@@ -61,6 +61,20 @@ end
 # ╔═╡ 96f8377c-5113-479c-8a91-d5c357ea9145
 v0 = all_box_vertices[1]
 
+# ╔═╡ 57c52af7-541b-4f6b-a514-785f9fe3c6ff
+md"""
+# Exercise
+
+Add blended\_pairwise\_conditional_gradient to the plot.
+
+Plot the active set for BPCG. Change to the active set of AFW.
+"""
+
+# ╔═╡ 268c1cef-624e-4ad1-bfe4-7011f2263758
+md"""
+All functions below are utility functions and not part of the tutorial. Feel free to take a look for curiosity.
+"""
+
 # ╔═╡ 4d2d2a37-3480-43d7-9db2-007744801cad
 # Below are useful functions already defined for convenience
 function get_angle(v)
@@ -184,7 +198,6 @@ begin
 end
 
 # ╔═╡ 78a97103-3935-4047-8e41-66a389dcd477
-# Exercise, add blended_pairwise_conditional_gradient to the plot
 begin
 	bpcg_iterates = [copy(v0)]
 	bpcg_callback = make_iterate_callback(bpcg_iterates)
@@ -204,6 +217,7 @@ begin
 	end
 	# uncomment to show the final active set
 	# plot_distribution!(pl_iterates, bpcg_result.active_set)
+	pl_iterates
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1474,8 +1488,10 @@ version = "1.4.1+1"
 # ╠═96f8377c-5113-479c-8a91-d5c357ea9145
 # ╠═e4844971-ef73-4dbb-92f4-47b7a6cb9f5d
 # ╠═69d7f92d-030e-4c05-b16b-88c8cc10de17
+# ╟─57c52af7-541b-4f6b-a514-785f9fe3c6ff
 # ╠═78a97103-3935-4047-8e41-66a389dcd477
 # ╠═99edd071-6e0b-4221-aa50-a5740aeb5005
+# ╟─268c1cef-624e-4ad1-bfe4-7011f2263758
 # ╠═2ff24416-6a3f-4894-9907-d5ccca4c37d8
 # ╠═4d2d2a37-3480-43d7-9db2-007744801cad
 # ╠═cd6d18d8-9da4-42ca-829e-66fb494c282a
